@@ -1,11 +1,12 @@
-// Software: Training Artificial Neural Network for MNIST database
-// Author: Hy Truong Son
-// Major: BSc. Computer Science
-// Class: 2013 - 2016
-// Institution: Eotvos Lorand University
-// Email: sonpascal93@gmail.com
-// Website: http://people.inf.elte.hu/hytruongson/
-// Copyright 2015 (c). All rights reserved.
+/*
+Author: Jordan Ott
+Date: 03/04/2017
+Description:
+This is a single layer neural network for the mnist data set
+Copies of this network will be made in threads to parallelize the training of the network
+
+This code is adapted from: https://github.com/HyTruongSon/Neural-Network-MNIST-CPP
+*/
 
 #include <iostream>
 #include <fstream>
@@ -66,9 +67,6 @@ double *w2[n2], *delta2[n2], *in2, *out2, *theta2;
 // Layer 3 - Output layer
 double *in3, *out3, *theta3;
 double expected[n3];
-
-// Image. In MNIST: 28x28 gray scale images.
-int d[width][height];
 
 double mnist_training_data[60000][784];
 double mnist_label_data[60000][10];
