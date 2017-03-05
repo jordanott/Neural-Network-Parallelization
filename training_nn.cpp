@@ -36,7 +36,7 @@ const string model_fn = "model-neural-network.dat";
 const string report_fn = "training-report.dat";
 
 // Number of training samples
-const int nTraining = 1000;
+const int nTraining = 50000;
 
 // Image size in MNIST database
 const int width = 28;
@@ -427,21 +427,12 @@ void print_info(int index){
 // +--------------+
 
 int main(int argc, char *argv[]) {
-    Read_MNIST_training(1000,784);
-    Read_MNIST_label(1000,10);
+    Read_MNIST_training(50000,784);
+    Read_MNIST_label(50000,10);
     
 	about();
 	
     report.open(report_fn.c_str(), ios::out);
-
-	// Reading file headers
-    char number;
-    for (int i =0; i < 16; ++i) {
-        image.read(&number, sizeof(char));
-	}
-    for (int i =0; i < 8; ++i) {
-        label.read(&number, sizeof(char));
-	}
 		
 	// Neural Network Initialization
     init_array();
