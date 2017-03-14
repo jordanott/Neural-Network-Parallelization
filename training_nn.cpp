@@ -132,17 +132,11 @@ void Read_MNIST_label(int number_of_images,int i)
     {
         int num = 0;
         int magic_number = 0;
-
         int n_rows = 0;
-
         int n_cols = 0;
-
         file.read((char*) &magic_number, sizeof(magic_number));
-
         magic_number = ReverseInt(magic_number);
-
         file.read((char*) &num,sizeof(num));
-
         num = ReverseInt(num);
 
         for(int img = 0; img < number_of_images; ++img)
