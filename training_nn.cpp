@@ -7,7 +7,7 @@ Copies of this network will be made in threads to parallelize the training of th
 
 This code is adapted from: https://github.com/HyTruongSon/Neural-Network-MNIST-CPP
 */
-
+#include <omp.h>
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -432,6 +432,7 @@ int main(int argc, char *argv[]) {
     init_array();
     clock_t begin = clock();
 
+    #pragma omp parallel for num_threads(4) 
     for (int sample =0; sample < nTraining; ++sample) {
         cout << "Sample " << sample << endl;
         
@@ -439,18 +440,19 @@ int main(int argc, char *argv[]) {
         input(sample);
 		
 		// Learning process: Perceptron (Forward procedure) - Back propagation
-        int nIterations = learning_process();
-
+        #pragma omp critical
+        {
+            int nIterations = learning_process();
+        }
 		// Write down the squared error
-		cout << "No. iterations: " << nIterations << endl;
+		/*cout << "No. iterations: " << nIterations << endl;
         printf("Error: %0.6lf\n\n", square_error());
         report << "Sample " << sample << ": No. iterations = " << nIterations << ", Error = " << square_error() << endl;
-		
+		*/
 		// Save the current network (weights)
-		if (sample % 50 == 0) {
+		/*if (sample % 50 == 0) {
             print_info(sample);
-        }
-		
+        }*/
     }
 	clock_t end = clock();
     double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;

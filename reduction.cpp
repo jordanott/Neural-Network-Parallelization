@@ -17,7 +17,7 @@ main(int argc, char *argv[])  {
 		b[i] = i;
 	}
 	result = 0;
-	#pragma omp parallel for	
+	#pragma omp parallel for num_threads(4)	
 	for (int i=0; i < n; i++)
 	{
 		#pragma omp critical
