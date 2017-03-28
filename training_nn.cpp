@@ -43,7 +43,7 @@ const int width = 28;
 const int height = 28;
 
 // n1 = Number of input neurons
-// n2 = Number of hidden neurons
+// n2 = Number of hidden neurons ResearchPriority1
 // n3 = Number of output neurons
 // epochs = Number of iterations for back-propagation algorithm
 // learning_rate = Learing rate
@@ -59,13 +59,13 @@ const double momentum = 0.9;
 const double epsilon = 1e-3;
 
 // From layer 1 to layer 2. Or: Input layer - Hidden layer
-double *w1[n1], *delta1[n1], *out1;
+double *global_w1[n1], w1[n1][n2], delta1[n1][n2], out1[n1];
 
 // From layer 2 to layer 3. Or; Hidden layer - Output layer
-double *w2[n2], *delta2[n2], *in2, *out2, *theta2;
+double *global_w2[n2], w2[n2][n3], delta2[n2][n3], in2[n2], out2[n2], theta2[n2];
 
 // Layer 3 - Output layer
-double *in3, *out3, *theta3;
+double in3[n3], out3[n3], theta3[n3];
 double expected[n3];
 
 double mnist_training_data[60000][784];
@@ -140,15 +140,13 @@ void Read_MNIST_label(int number_of_images,int i)
         num = ReverseInt(num);
 
         for(int img = 0; img < number_of_images; ++img)
-
         {
-
             unsigned char temp = 0;
 
             file.read((char*) &temp, sizeof(temp));
 
             int number = (double)temp;
-            cout << number << endl;
+            
             for (int i =0; i < n3; ++i) {
                 mnist_label_data[img][i] = 0.0;
             }
@@ -185,26 +183,28 @@ void about() {
 void init_array() {
 	// Layer 1 - Layer 2 = Input layer - Hidden layer
     for (int i =0; i < n1; ++i) {
-        w1[i] = new double [n2];
-        delta1[i] = new double [n2];
+        global_w1[i] = new double [n2];
+        //w1[i] = new double [n2];
+        //delta1[i] = new double [n2];
     }
     
-    out1 = new double [n1];
+    //out1 = new double [n1];
 
 	// Layer 2 - Layer 3 = Hidden layer - Output layer
     for (int i =0; i < n2; ++i) {
-        w2[i] = new double [n3];
-        delta2[i] = new double [n3];
+        global_w2[i] = new double [n3];
+        //w2[i] = new double [n3];
+        //delta2[i] = new double [n3];
     }
     
-    in2 = new double [n2];
+    /*in2 = new double [n2];
     out2 = new double [n2];
     theta2 = new double [n2];
 
 	// Layer 3 - Output layer
     in3 = new double [n3];
     out3 = new double [n3];
-    theta3 = new double [n3];
+    theta3 = new double [n3];*/
     
     // Initialization for weights from Input layer to Hidden layer
     for (int i =0; i < n1; ++i) {
@@ -218,6 +218,7 @@ void init_array() {
             if (sign == 1) {
 				w1[i][j] = - w1[i][j];
 			}
+            global_w1[i][j] = 0;
         }
 	}
 	
@@ -233,6 +234,7 @@ void init_array() {
             if (sign == 1) {
 				w2[i][j] = - w2[i][j];
 			}
+            global_w2[i][j] = 0;
         }
 	}
 }
@@ -315,13 +317,15 @@ void back_propagation() {
         for (int j =0; j < n3; ++j) {
             delta2[i][j] = (learning_rate * theta3[j] * out2[i]) + (momentum * delta2[i][j]);
             w2[i][j] += delta2[i][j];
+            
         }
 	}
 
     for (int i =0; i < n1; ++i) {
-        for (int j = 1 ; j < n2 ; j++ ) {
+        for (int j = 0 ; j < n2 ; j++ ) {
             delta1[i][j] = (learning_rate * theta2[j] * out1[i]) + (momentum * delta1[i][j]);
             w1[i][j] += delta1[i][j];
+            
         }
 	}
 }
@@ -346,6 +350,7 @@ int learning_process() {
     for (int i =0; i < epochs; ++i) {
         forward_pass();
         back_propagation();
+        
         if (square_error() < epsilon) {
 			return i;
 		}
@@ -379,7 +384,7 @@ void write_matrix(string file_name) {
 	// Input layer - Hidden layer
     for (int i =0; i < n1; ++i) {
         for (int j =0; j < n2; ++j) {
-			file << w1[i][j] << " ";
+			file << global_w1[i][j] << " ";
 		}
 		file << endl;
     }
@@ -387,7 +392,7 @@ void write_matrix(string file_name) {
 	// Hidden layer - Output layer
     for (int i =0; i < n2; ++i) {
         for (int j =0; j < n3; ++j) {
-			file << w2[i][j] << " ";
+			file << global_w2[i][j] << " ";
 		}
         file << endl;
     }
@@ -425,6 +430,7 @@ int main(int argc, char *argv[]) {
     Read_MNIST_label(50000,10);
     
 	about();
+
 	
     report.open(report_fn.c_str(), ios::out);
 		
@@ -432,18 +438,16 @@ int main(int argc, char *argv[]) {
     init_array();
     clock_t begin = clock();
 
-    #pragma omp parallel for num_threads(4) 
+    int sample_per_thread = nTraining / 20;
+    #pragma omp parallel for num_threads(20) private(w1,delta1,out1,w2,delta2,in2,out2,theta2,in3,out3,theta3,expected) shared(global_w1,global_w2)
     for (int sample =0; sample < nTraining; ++sample) {
-        cout << "Sample " << sample << endl;
+        //cout << "Sample " << sample << endl;
         
         // Getting (image, label)
         input(sample);
-		
 		// Learning process: Perceptron (Forward procedure) - Back propagation
-        #pragma omp critical
-        {
-            int nIterations = learning_process();
-        }
+        int nIterations = learning_process();
+        
 		// Write down the squared error
 		/*cout << "No. iterations: " << nIterations << endl;
         printf("Error: %0.6lf\n\n", square_error());
@@ -453,13 +457,29 @@ int main(int argc, char *argv[]) {
 		/*if (sample % 50 == 0) {
             print_info(sample);
         }*/
+        if((sample + 1) % sample_per_thread == 0)
+        {
+            for (int i =0; i < n1; ++i) {
+                for (int j = 0; j < n2 ; j++ ) {
+                    #pragma omp critical
+                    {
+                        global_w1[i][j] += w1[i][j];
+                    }
+                }
+            }
+        }
+        
+        
     }
+
 	clock_t end = clock();
     double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+
+    cout << "Global: " << global_w1[0][0] << endl;
     cout << "Elapsed time: " << elapsed_secs /60 << endl;
 	// Save the final network
     write_matrix(model_fn);
-    
+    report << "Elapsed time: " << elapsed_secs /60 << endl;
     report.close();
     
     return 0;
