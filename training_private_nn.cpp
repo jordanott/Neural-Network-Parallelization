@@ -23,6 +23,7 @@ This code is adapted from: https://github.com/HyTruongSon/Neural-Network-MNIST-C
 
 using namespace std;
 
+#define NUM_THREADS 12
 // Training image file name
 const string training_image_fn = "mnist/train-images.idx3-ubyte";
 
@@ -258,8 +259,8 @@ int main(int argc, char *argv[]) {
 	// Neural Network Initialization
     clock_t begin = clock();
 	init_global();
-    int sample_per_thread = nTraining / 20;
-    #pragma omp parallel num_threads(20) default(none) shared(cout,mnist_label_data,mnist_training_data,sample_per_thread,global_w2,global_w1)
+    int sample_per_thread = nTraining / NUM_THREADS;
+    #pragma omp parallel num_threads(NUM_THREADS) default(none) shared(cout,mnist_label_data,mnist_training_data,sample_per_thread,global_w2,global_w1)
     {
         // From layer 1 to layer 2. Or: Input layer - Hidden layer
         double w1[784][128], delta1[784][128], out1[784];
@@ -289,7 +290,7 @@ int main(int argc, char *argv[]) {
                 int sign = rand() % 2;
                 
                 // Another strategy to randomize the weights - quite good 
-                // w2[i][j] = (double)(rand() % 6) / 10.0;
+                 //w2[i][j] = (double)(rand() % 6) / 10.0;
 
                 w2[i][j] = (double)(rand() % 10) / (10.0 * n3);
                 if (sign == 1) {
@@ -302,8 +303,6 @@ int main(int argc, char *argv[]) {
         #pragma omp for 
         for (int sample =0; sample < 50000; ++sample) {
             //cout << omp_get_thread_num() << " : " << omp_get_num_threads() << endl;
-
-
             // GET SAMPLE
             for (int i =0; i < 784; ++i) {
                 out1[i] = mnist_training_data[sample][i];
@@ -385,10 +384,7 @@ int main(int argc, char *argv[]) {
                         
                     }
                 }
-                
             }
-            
-    	
             if((sample + 1) % sample_per_thread == 0)
             {
                 for (int i =0; i < n1; ++i) {
@@ -399,6 +395,14 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
+                for (int i =0; i < n2; ++i) {
+                    for (int j = 0; j < n3 ; j++ ) {
+                        #pragma omp critical
+                        {
+                            global_w2[i][j] += w2[i][j];
+                        }
+                    }
+                }
             }
             
         }
@@ -406,8 +410,19 @@ int main(int argc, char *argv[]) {
 	clock_t end = clock();
     double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 
-    cout << "Global: " << global_w1[0][0] << endl;
-    cout << "Elapsed time: " << elapsed_secs /60 << endl;
+    for (int i =0; i < n1; ++i) {
+        for (int j = 0; j < n2 ; j++ ) {
+           // global_w1[i][j] /= NUM_THREADS;
+            
+        }
+    }
+    for (int i =0; i < n2; ++i) {
+        for (int j = 0; j < n3 ; j++ ) {
+          //  global_w2[i][j] /= NUM_THREADS;
+            
+        }
+    }
+
 	// Save the final network
     write_matrix(model_fn);
     report << "Elapsed time: " << elapsed_secs /60 << endl;
